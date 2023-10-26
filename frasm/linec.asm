@@ -33,8 +33,9 @@ segment code
 		xor di, di
 		mov si, 319
 		mov di, 240
-;define a quantidade de loops completos (tempo de jogo
 		mov cx, 50000
+		call set_caracter1
+;define a quantidade de loops completos (tempo de jogo
 main:
 	;circulos vermelhos
 	mov     byte[cor],vermelho  
@@ -74,8 +75,7 @@ main:
 	jge bate_cima
 	cmp di, 10
 	jle bate_baixo 
-	call set_caracter
-	call desenha_bordas
+	call desenha_cabeçalho
 loop main
 
 bate_esquerda:
@@ -96,63 +96,63 @@ jmp main
 
 
 
-desenha_bordas:
-	;borda superior (x1, y1, x2, y2)
-	mov		byte[cor],branco_intenso	
-	mov		ax,0
-	push		ax
-	mov		ax,0
-	push		ax
-	mov		ax,639
-	push		ax
-	mov		ax,0
-	push		ax
-	call line
-	pop ax
-	pop ax
-	pop ax
-	;borda inferior (x1, y1, x2, y2)
-	mov		byte[cor],branco_intenso	
-	mov		ax,0
-	push		ax
-	mov		ax,479
-	push		ax
-	mov		ax,639
-	push		ax
-	mov		ax,479
-	push		ax
-	call line
-	pop ax
-	pop ax
-	pop ax
-	;borda esquerda (x1, y1, x2, y2)
-	mov		byte[cor],branco_intenso	
-	mov		ax,0
-	push		ax
-	mov		ax,0
-	push		ax
-	mov		ax,0
-	push		ax
-	mov		ax,479
-	push		ax
-	call line
-	pop ax
-	pop ax
-	pop ax
-	;borda direita (x1, y1, x2, y2)
-	mov		byte[cor],branco_intenso	
-	mov		ax,639
-	push		ax
-	mov		ax,0
-	push		ax
-	mov		ax,639
-	push		ax
-	mov		ax,479
-	push		ax
-	call line
-	pop ax
-	pop ax
-	pop ax
+;desenha_bordas:
+	;;borda superior (x1, y1, x2, y2)
+	;mov		byte[cor],branco_intenso	
+	;mov		ax,0
+	;push		ax
+	;mov		ax,0
+	;push		ax
+	;mov		ax,639
+	;push		ax
+	;mov		ax,0
+	;push		ax
+	;call line
+	;pop ax
+	;pop ax
+	;pop ax
+	;;borda inferior (x1, y1, x2, y2)
+	;mov		byte[cor],branco_intenso	
+	;mov		ax,0
+	;push		ax
+	;mov		ax,479
+	;push		ax
+	;mov		ax,639
+	;push		ax
+	;mov		ax,479
+	;push		ax
+	;call line
+	;pop ax
+	;pop ax
+	;pop ax
+	;;borda esquerda (x1, y1, x2, y2)
+	;mov		byte[cor],branco_intenso	
+	;mov		ax,0
+	;push		ax
+	;mov		ax,0
+	;push		ax
+	;mov		ax,0
+	;push		ax
+	;mov		ax,479
+	;push		ax
+	;call line
+	;pop ax
+	;pop ax
+	;pop ax
+	;;borda direita (x1, y1, x2, y2)
+	;mov		byte[cor],branco_intenso	
+	;mov		ax,639
+	;push		ax
+	;mov		ax,0
+	;push		ax
+	;mov		ax,639
+	;push		ax
+	;mov		ax,479
+	;push		ax
+	;call line
+	;pop ax
+	;pop ax
+	;pop ax
 
 desenha_cabeçalho:
 	;borda cabeçalho (x1, y1, x2, y2)
@@ -170,10 +170,26 @@ desenha_cabeçalho:
 	pop ax
 	pop ax
 	
+desenha_raquete:
+	;raquete (x1, y1, x2, y2)
+	mov		byte[cor],branco_intenso	
+	mov		ax,word[raqx]
+	push		ax
+	mov		ax,214
+	push		ax
+	mov		ax,word[raqx]
+	push		ax
+	mov		ax,254
+	push		ax
+	call line
+	pop ax
+	pop ax
+	pop ax
+
 jmp main
 
 ;escrever uma mensagem
-set_caracter:
+set_caracter1:
     mov     	cx,58			;n�mero de caracteres
     mov     	bx,0
     mov     	dh,0			;linha 0-29
@@ -181,12 +197,27 @@ set_caracter:
 	mov		byte[cor],branco_intenso
 l4:
 		call	cursor
-    	mov     al,[bx+mens]
+    	mov     al,[bx+mens1]
 		call	caracter
     	inc     bx			;proximo caracter
 		inc		dl			;avanca a coluna
     	loop    l4
-jmp desenha_bordas
+set_caracter2:
+	mov     	cx,24			;n�mero de caracteres
+    mov     	bx,0
+    mov     	dh,1			;linha 0-29
+    mov     	dl,0			;coluna 0-79
+	mov		byte[cor],branco_intenso
+write_name:
+		call	cursor
+    	mov     al,[bx+mens2]
+		call	caracter
+    	inc     bx			;proximo caracter
+		inc		dl			;avanca a coluna
+    	loop    write_name
+
+
+
 		;mov    	ah,08h
 		;int     21h
 	    ;mov  	ah,0   			; set video mode
@@ -774,11 +805,13 @@ linha   	dw  		0
 coluna  	dw  		0
 deltax		dw		0
 deltay		dw		0	
-mens    	db  'Exercicio de Programacao de Sistemas Embarcados 1 - 2023/2'
+mens1    	db  'Exercicio de Programacao de Sistemas Embarcados 1 - 2023/2'
+mens2		db	'Arthur Bandeira Salvador'
 
-velocidade	dw	250
+velocidade	dw	120
 vx			dw	10
 vy			dw	10
+raqx		dw 	599
 ;*************************************************************************
 segment stack stack
     		resb 		512
