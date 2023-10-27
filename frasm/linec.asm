@@ -35,6 +35,7 @@ segment code
 		mov di, 240
 		mov cx, 50000
 		call set_caracter1
+comeco:
 ;define a quantidade de loops completos (tempo de jogo
 main:
 	;circulos vermelhos
@@ -50,7 +51,6 @@ main:
 	pop ax
 	pop ax
 	pop ax
-
 	;apaga circulos (circulos pretos)
 	mov     byte[cor],preto
 	mov     ax, si
@@ -62,97 +62,134 @@ main:
 	call full_circle
 	pop ax
 	pop ax
-	pop ax
-			
+	pop ax		
 
 	add si, word[vx]
 	add di, word[vy]
+
 	cmp si, 10
 	jle	bate_esquerda
+volta1:
 	cmp si, 627
 	jge bate_direita 
+volta2:
 	cmp di, 419
 	jge bate_cima
+volta3:
 	cmp di, 10
-	jle bate_baixo 
+	jle bate_baixo
+volta4:
 	call desenha_cabeçalho
+desenhou:
+	mov ah, 01h
+	int 16h
+	jnz tecla_clicada
 loop main
 
 bate_esquerda:
-	mov word[vx], 10
-jmp main
+	push ax
+	mov ax, word[vatual]
+	mov word[vx], ax
+	pop ax
+jmp volta1
 
 bate_direita:
-	mov word[vx], -10    
-jmp main
+	push ax
+	mov ax, -1
+	mul word[vatual]
+	mov word[vx], ax
+	pop ax    
+jmp volta2
 
 bate_cima:
-	mov word[vy], -10
-jmp main
+	push ax
+	mov ax, -1
+	mul word[vatual]
+	mov word[vy], ax
+	pop ax
+jmp volta3
 
 bate_baixo:
-	mov word[vy], 10    
+	push ax
+	mov ax, word[vatual]
+	mov word[vy], ax
+	pop ax  
+jmp volta4
+
+move_main:
+	jmp main
+
+tecla_clicada:
+	mov ah, 00h
+	int 16h
+	cmp al, 73h ; 's'
+	jz move_encerra
+	cmp al, 63h ; 'c'
+	jz raquete_cima
+	cmp al, 62h	; 'b'
+	jz raquete_baixo
+	cmp al, 6dh ; 'm'
+	jz move_menosvelo
+	cmp al, 70h ; 'p'
+	jz move_maisvelo
 jmp main
 
+raquete_cima:
+	cmp word[raqf], 415
+	jge move_main
+	
+	;apaga raquete antiga;
+	mov		byte[cor],preto	
+	mov		ax,599
+	push		ax
+	mov		ax,word[raqi]
+	push		ax
+	mov		ax,599
+	push		ax
+	mov		ax,word[raqf]
+	push		ax
+	call line
+	pop ax
+	pop ax
+	pop ax
+	
+	;aumenta raqi e raqf;
+	add word[raqi], 15
+	add word[raqf], 15
+jmp main
 
+raquete_baixo:
+	cmp word[raqi], 15
+	jle move_main
+	
+	;apaga raquete antiga;
+	mov		byte[cor],preto	
+	mov		ax,599
+	push		ax
+	mov		ax,word[raqi]
+	push		ax
+	mov		ax,599
+	push		ax
+	mov		ax,word[raqf]
+	push		ax
+	call line
+	pop ax
+	pop ax
+	pop ax
+	
+	;aumenta raqi e raqf;
+	add word[raqi], -15
+	add word[raqf], -15
+jmp main
 
-;desenha_bordas:
-	;;borda superior (x1, y1, x2, y2)
-	;mov		byte[cor],branco_intenso	
-	;mov		ax,0
-	;push		ax
-	;mov		ax,0
-	;push		ax
-	;mov		ax,639
-	;push		ax
-	;mov		ax,0
-	;push		ax
-	;call line
-	;pop ax
-	;pop ax
-	;pop ax
-	;;borda inferior (x1, y1, x2, y2)
-	;mov		byte[cor],branco_intenso	
-	;mov		ax,0
-	;push		ax
-	;mov		ax,479
-	;push		ax
-	;mov		ax,639
-	;push		ax
-	;mov		ax,479
-	;push		ax
-	;call line
-	;pop ax
-	;pop ax
-	;pop ax
-	;;borda esquerda (x1, y1, x2, y2)
-	;mov		byte[cor],branco_intenso	
-	;mov		ax,0
-	;push		ax
-	;mov		ax,0
-	;push		ax
-	;mov		ax,0
-	;push		ax
-	;mov		ax,479
-	;push		ax
-	;call line
-	;pop ax
-	;pop ax
-	;pop ax
-	;;borda direita (x1, y1, x2, y2)
-	;mov		byte[cor],branco_intenso	
-	;mov		ax,639
-	;push		ax
-	;mov		ax,0
-	;push		ax
-	;mov		ax,639
-	;push		ax
-	;mov		ax,479
-	;push		ax
-	;call line
-	;pop ax
-	;pop ax
-	;pop ax
+move_main2:
+	jmp main
+move_encerra:
+	jmp encerra
+move_menosvelo:
+	jmp reduz_velo
+move_maisvelo:
+	jmp aumenta_velo
 
 desenha_cabeçalho:
 	;borda cabeçalho (x1, y1, x2, y2)
@@ -173,22 +210,34 @@ desenha_cabeçalho:
 desenha_raquete:
 	;raquete (x1, y1, x2, y2)
 	mov		byte[cor],branco_intenso	
-	mov		ax,word[raqx]
+	mov		ax,599
 	push		ax
-	mov		ax,214
+	mov		ax,word[raqi]
 	push		ax
-	mov		ax,word[raqx]
+	mov		ax,599
 	push		ax
-	mov		ax,254
+	mov		ax,word[raqf]
 	push		ax
 	call line
 	pop ax
 	pop ax
 	pop ax
 
-jmp main
+jmp desenhou
 
-;escrever uma mensagem
+reduz_velo:
+	cmp word[vatual], 10
+	jle move_main2
+	
+	add word[vatual], -10
+	jmp move_main
+aumenta_velo:
+	cmp word[vatual], 30
+	jge move_main2
+	
+	add word[vatual], 10
+	jmp move_main
+
 set_caracter1:
     mov     	cx,58			;n�mero de caracteres
     mov     	bx,0
@@ -216,14 +265,14 @@ write_name:
 		inc		dl			;avanca a coluna
     	loop    write_name
 
+jmp comeco
 
-
-		;mov    	ah,08h
-		;int     21h
-	    ;mov  	ah,0   			; set video mode
-	    ;mov  	al,[modo_anterior]   	; modo anterior
-	    ;int  	10h
-		;mov 	al,0
+encerra:
+	mov  	ah,0   			; set video mode
+	mov  	al,[modo_anterior]   	; modo anterior
+	int  	10h
+	mov 	ax, 4c00h
+	int 	21h
 ;***************************************************************************
 ;
 ;   fun��o cursor
@@ -811,7 +860,9 @@ mens2		db	'Arthur Bandeira Salvador'
 velocidade	dw	120
 vx			dw	10
 vy			dw	10
-raqx		dw 	599
+vatual 		dw	10
+raqi		dw	214
+raqf		dw	254
 ;*************************************************************************
 segment stack stack
     		resb 		512
