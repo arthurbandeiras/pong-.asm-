@@ -39,11 +39,11 @@ desenha_cabecalho:
 	mov		byte[cor],branco_intenso	;borda cabeçalho (x1, y1, x2, y2)
 	mov		ax,0
 	push		ax
-	mov		ax,430
+	mov		ax,431
 	push		ax
 	mov		ax,640
 	push		ax
-	mov		ax,430
+	mov		ax,431
 	push		ax
 	call line
 	pop ax
@@ -51,6 +51,21 @@ desenha_cabecalho:
 	pop ax
 
 main:
+	
+	mov		byte[cor],branco_intenso	;raquete (x1, y1, x2, y2)
+	mov		ax,599
+	push		ax
+	mov		ax,word[raqi]
+	push		ax
+	mov		ax,599
+	push		ax
+	mov		ax,word[raqf]
+	push		ax
+	call line
+	pop ax
+	pop ax
+	pop ax
+
 	;circulos vermelhos
 	mov     byte[cor],vermelho  
 	mov     ax, si
@@ -88,34 +103,21 @@ main:
 	pop ax
 	pop ax		
 
-	mov		byte[cor],branco_intenso	;raquete (x1, y1, x2, y2)
-	mov		ax,599
-	push		ax
-	mov		ax,word[raqi]
-	push		ax
-	mov		ax,599
-	push		ax
-	mov		ax,word[raqf]
-	push		ax
-	call line
-	pop ax
-	pop ax
-	pop ax
 
 	add si, word[vx]
 	add di, word[vy]
 
 
-	cmp di, 17
+	cmp di, 20
 	jle bate_baixo
 volta1:
-	cmp si, 623
+	cmp si, 620
 	jge bate_direita 
 volta2:
-	cmp di, 415
+	cmp di, 405
 	jge bate_cima
 volta3:
-	cmp si, 17
+	cmp si, 20
 	jle	bate_esquerda
 volta4:
 	mov ah, 01h
@@ -137,7 +139,8 @@ bate_direita:
 	push ax
 	mul word[vatual]
 	mov word[vx], ax
-	pop ax    
+	pop ax
+	call ponto_comp    
 jmp volta2
 
 bate_cima:
@@ -158,43 +161,40 @@ jmp volta4
 bate_raquete:
 	cmp si, 589
 	jl checagem	
-	
 	cmp di, word[raqi]	;vê se x é menor
 	jl checagem	
 	cmp di, word[raqf]	;vê se x é maior
 	jg checagem
-	;passou na checagem
-	mov ax, -1
+	mov ax, -1		;passou na checagem, inverte vx
 	push ax
 	mul word[vatual]
 	mov word[vx], ax 
 	pop ax
+	call ponto_player
 jmp checagem
 
 move_main:
 	jmp main
 
 tecla_clicada:
-	mov ah, 00h
-	int 16h
-	cmp al, 73h ; 's'
-	je move_encerra
-	cmp al, 63h ; 'c'
-	je raquete_cima
-	cmp al, 62h	; 'b'
-	je raquete_baixo
-	cmp al, 6dh ; 'm'
-	je reduz_velo
-	cmp al, 70h ; 'p'
-	je aumenta_velo
+	mov ah, 08h
+	int 21h
+	cmp al, 's' ; 's'
+	jz move_encerra
+	cmp al, 'c' ; 'c'
+	jz raquete_cima
+	cmp al, 'b'	; 'b'
+	jz raquete_baixo
+	cmp al, 'm' ; 'm'
+	jz reduz_velo
+	cmp al, 'p' ; 'p'
+	jz move_aumenta_velo
 jmp main
 
 raquete_cima:
 	cmp word[raqf], 415
 	jge move_main
-	
-	;apaga raquete antiga;
-	mov		byte[cor],preto	
+	mov		byte[cor],preto		;apaga raquete antiga;
 	mov		ax,599
 	push		ax
 	mov		ax,word[raqi]
@@ -207,18 +207,14 @@ raquete_cima:
 	pop ax
 	pop ax
 	pop ax
-	
-	;aumenta raqi e raqf;
-	add word[raqi], 10
-	add word[raqf], 10
+	add word[raqi], 15		;aumenta raqi e raqf;
+	add word[raqf], 15
 jmp main
 
 raquete_baixo:
 	cmp word[raqi], 15
 	jle move_main
-	
-	;apaga raquete antiga;
-	mov		byte[cor],preto	
+	mov		byte[cor],preto		;apaga raquete antiga;
 	mov		ax,599
 	push		ax
 	mov		ax,word[raqi]
@@ -231,31 +227,134 @@ raquete_baixo:
 	pop ax
 	pop ax
 	pop ax
-	
-	;aumenta raqi e raqf;
-	add word[raqi], -10
-	add word[raqf], -10
+	add word[raqi], -15		;aumenta raqi e raqf;
+	add word[raqf], -15
 jmp main
 
 move_main2:
 	jmp main
 move_encerra:
 	jmp encerra
+move_aumenta_velo:
+	jmp aumenta_velo
 
-reduz_velo:
-	cmp word[vatual], 5
+reduz_velo:					;função chamada com 'm'
+	cmp word[vatual], 4
 	jle move_main2
+	add word[vatual], -4
+	add byte[v_printa_int], -1
+	call altera_v_printa
 	
-	add word[vatual], -5
+	cmp word[vx], 0
+	jl reduz_vx_neg
+	jg reduz_vx_pos
+vy_reduz:					;tag para os casos de mudança
+	cmp word[vy], 0
+	jl reduz_vy_neg
+	jg reduz_vy_pos
 	jmp move_main
-aumenta_velo:
-	cmp word[vatual], 15
+
+aumenta_velo:				;função chamada com 'p'
+	cmp word[vatual], 12
 	jge move_main2
+	add word[vatual], 4
+	add byte[v_printa_int], 1
+	call altera_v_printa
 	
-	add word[vatual], 5
+	cmp word[vx], 0
+	jl aumenta_vx_neg
+	jg aumenta_vx_pos
+vy_aumenta:					;tag para os casos de mudança
+	cmp word[vy], 0
+	jl aumenta_vy_neg
+	jg aumenta_vy_pos
+	jmp move_main
+
+reduz_vx_neg:			;casos de mudança de velocidade
+	add word[vx], 4
+	jmp vy_reduz
+reduz_vx_pos:
+	add word[vx], -4
+	jmp vy_reduz
+aumenta_vx_neg:
+	add word[vx], -4
+	jmp vy_aumenta
+aumenta_vx_pos:
+	add word[vx], 4
+	jmp vy_aumenta
+reduz_vy_neg:
+	add word[vy], 4
+	jmp move_main
+reduz_vy_pos:
+	add word[vy], -4
+	jmp move_main
+aumenta_vy_neg:
+	add word[vy], -4
+	jmp move_main
+aumenta_vy_pos:
+	add word[vy], 4
 	jmp move_main
 
 
+ponto_player:
+	xor ax, ax
+	xor dx, dx
+	add word[ponto_play], 1
+	mov ax, word[ponto_play]
+	push ax
+	mov cx, 10
+	push cx
+	div cx
+	add dl, '0'
+	mov byte[pnt_play_str + 1], dl
+	add al, '0'
+	mov byte[pnt_play_str], al
+	pop cx
+	pop ax
+set_ponto_player:
+	mov     	cx,2			;n�mero de caracteres
+    mov     	bx,0
+    mov     	dh,1			;linha 0-29
+    mov     	dl,25			;coluna 0-79
+	mov		byte[cor],branco_intenso
+print_player:
+		call	cursor
+    	mov     al,[bx+pnt_play_str]
+		call	caracter
+    	inc     bx			;proximo caracter
+		inc		dl			;avanca a coluna
+    	loop    print_player
+	ret
+
+ponto_comp:
+	xor ax, ax
+	xor dx, dx
+	add word[ponto_pc], 1
+	mov ax, word[ponto_pc]
+	push ax
+	mov cx, 10
+	push cx
+	div cx
+	add dl, '0'
+	mov byte[pnt_pc_str + 1], dl
+	add al, '0'
+	mov byte[pnt_pc_str], al
+	pop cx
+	pop ax
+set_ponto_comp:
+	mov     	cx,2			;n�mero de caracteres
+    mov     	bx,0
+    mov     	dh,1			;linha 0-29
+    mov     	dl,30			;coluna 0-79
+	mov		byte[cor],branco_intenso
+print_comp:
+		call	cursor
+    	mov     al,[bx+pnt_pc_str]
+		call	caracter
+    	inc     bx			;proximo caracter
+		inc		dl			;avanca a coluna
+    	loop    print_comp
+	ret
 
 set_caracter1:
     mov     	cx,58			;n�mero de caracteres
@@ -286,6 +385,25 @@ write_name:
 
 jmp desenha_cabecalho
 
+altera_v_printa:
+	mov ax, 0
+	mov al, byte[v_printa_int]
+	add al, 30h
+	mov byte[v_printa_str], al
+
+	mov     	cx,1			;n�mero de caracteres
+    mov     	bx,0
+    mov     	dh,1			;linha 0-29
+    mov     	dl,58			;coluna 0-79
+	mov		byte[cor],branco_intenso
+print_v:
+		call	cursor
+    	mov     al,[bx+v_printa_str]
+		call	caracter
+    	inc     bx			;proximo caracter
+		inc		dl			;avanca a coluna
+    	loop    print_v
+	ret
 encerra:
 	mov  	ah,0   			; set video mode
 	mov  	al,[modo_anterior]   	; modo anterior
@@ -813,27 +931,6 @@ fim_line:
 		pop		bp
 		ret		8
 
-;delay: ; Esteja atento pois talvez seja importante salvar contexto (no caso, CX, o que NÃO foi feito aqui).
-;	xor ax, ax
-;	mov ah, 86h
-;	push cx
-;	mov cx, 1
-;	push dx
-;	mov dx, 0
-;	int 15h
-;	pop cx
-;	pop dx
-;	ret
-;del2:
-    ;push cx ; Coloca cx na pilha para usa-lo em outro loop
-    ;mov cx, 0500h ; Teste modificando este valor
-;del1:
- ;   loop del1 ; No loop del1, cx é decrementado até que volte a ser zero
-  ;  pop cx ; Recupera cx da pilha
-   ; loop del2 ; No loop del2, cx é decrementado até que seja zero
-    ;pop cx
-    ;ret
-
 ;*******************************************************************
 segment data
 
@@ -882,12 +979,19 @@ deltay		dw		0
 mens1    	db  'Exercicio de Programacao de Sistemas Embarcados 1 - 2023/2'
 mens2		db	'Arthur Bandeira Salvador 00 X 00 Computador   Velocidade (1/3)'
 
-velocidade	dw	120
-vx			dw	5
-vy			dw	5
-vatual 		dw	5
+vx			dw	4
+vy			dw	4
+vatual 		dw	4
+v_printa_int	db	1
+v_printa_str	db	'1', '$'
 raqi		dw	214
 raqf		dw	254
+
+ponto_play	dw	0
+ponto_pc	dw	0
+
+pnt_play_str	db	'00'
+pnt_pc_str		db	'00'
 ;*************************************************************************
 segment stack stack
     		resb 		512
