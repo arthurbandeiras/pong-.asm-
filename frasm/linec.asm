@@ -33,10 +33,23 @@ segment code
 		xor di, di
 		mov si, 319
 		mov di, 240
-		mov cx, 50000
+		mov cx, 50000 ;define a quantidade de loops completos (tempo de jogo)
 		call set_caracter1
-comeco:
-;define a quantidade de loops completos (tempo de jogo
+desenha_cabecalho:
+	mov		byte[cor],branco_intenso	;borda cabeçalho (x1, y1, x2, y2)
+	mov		ax,0
+	push		ax
+	mov		ax,430
+	push		ax
+	mov		ax,640
+	push		ax
+	mov		ax,430
+	push		ax
+	call line
+	pop ax
+	pop ax
+	pop ax
+
 main:
 	;circulos vermelhos
 	mov     byte[cor],vermelho  
@@ -47,10 +60,21 @@ main:
 	mov     ax,10
 	push        ax
 	call full_circle
-	call delay
+	
+	mov cx, 1
+	push cx
+	mov dx, 2
+	push dx
+	mov al, 0 
+	mov ah, 86h
+	int 15h		;função delay
+	pop cx
+	pop dx
+
 	pop ax
 	pop ax
 	pop ax
+
 	;apaga circulos (circulos pretos)
 	mov     byte[cor],preto
 	mov     ax, si
@@ -64,57 +88,88 @@ main:
 	pop ax
 	pop ax		
 
+	mov		byte[cor],branco_intenso	;raquete (x1, y1, x2, y2)
+	mov		ax,599
+	push		ax
+	mov		ax,word[raqi]
+	push		ax
+	mov		ax,599
+	push		ax
+	mov		ax,word[raqf]
+	push		ax
+	call line
+	pop ax
+	pop ax
+	pop ax
+
 	add si, word[vx]
 	add di, word[vy]
 
-	cmp si, 10
-	jle	bate_esquerda
+
+	cmp di, 17
+	jle bate_baixo
 volta1:
-	cmp si, 627
+	cmp si, 623
 	jge bate_direita 
 volta2:
-	cmp di, 419
+	cmp di, 415
 	jge bate_cima
 volta3:
-	cmp di, 10
-	jle bate_baixo
+	cmp si, 17
+	jle	bate_esquerda
 volta4:
-	call desenha_cabeçalho
-desenhou:
 	mov ah, 01h
 	int 16h
 	jnz tecla_clicada
+	call bate_raquete
+checagem:
 loop main
 
-bate_esquerda:
-	push ax
+bate_baixo:
 	mov ax, word[vatual]
-	mov word[vx], ax
-	pop ax
+	push ax
+	mov word[vy], ax
+	pop ax  
 jmp volta1
 
 bate_direita:
-	push ax
 	mov ax, -1
+	push ax
 	mul word[vatual]
 	mov word[vx], ax
 	pop ax    
 jmp volta2
 
 bate_cima:
-	push ax
 	mov ax, -1
+	push ax
 	mul word[vatual]
 	mov word[vy], ax
 	pop ax
 jmp volta3
 
-bate_baixo:
-	push ax
+bate_esquerda:
 	mov ax, word[vatual]
-	mov word[vy], ax
-	pop ax  
+	push ax
+	mov word[vx], ax
+	pop ax
 jmp volta4
+
+bate_raquete:
+	cmp si, 589
+	jl checagem	
+	
+	cmp di, word[raqi]	;vê se x é menor
+	jl checagem	
+	cmp di, word[raqf]	;vê se x é maior
+	jg checagem
+	;passou na checagem
+	mov ax, -1
+	push ax
+	mul word[vatual]
+	mov word[vx], ax 
+	pop ax
+jmp checagem
 
 move_main:
 	jmp main
@@ -123,15 +178,15 @@ tecla_clicada:
 	mov ah, 00h
 	int 16h
 	cmp al, 73h ; 's'
-	jz move_encerra
+	je move_encerra
 	cmp al, 63h ; 'c'
-	jz raquete_cima
+	je raquete_cima
 	cmp al, 62h	; 'b'
-	jz raquete_baixo
+	je raquete_baixo
 	cmp al, 6dh ; 'm'
-	jz move_menosvelo
+	je reduz_velo
 	cmp al, 70h ; 'p'
-	jz move_maisvelo
+	je aumenta_velo
 jmp main
 
 raquete_cima:
@@ -154,8 +209,8 @@ raquete_cima:
 	pop ax
 	
 	;aumenta raqi e raqf;
-	add word[raqi], 15
-	add word[raqf], 15
+	add word[raqi], 10
+	add word[raqf], 10
 jmp main
 
 raquete_baixo:
@@ -178,65 +233,29 @@ raquete_baixo:
 	pop ax
 	
 	;aumenta raqi e raqf;
-	add word[raqi], -15
-	add word[raqf], -15
+	add word[raqi], -10
+	add word[raqf], -10
 jmp main
 
 move_main2:
 	jmp main
 move_encerra:
 	jmp encerra
-move_menosvelo:
-	jmp reduz_velo
-move_maisvelo:
-	jmp aumenta_velo
-
-desenha_cabeçalho:
-	;borda cabeçalho (x1, y1, x2, y2)
-	mov		byte[cor],branco_intenso	
-	mov		ax,0
-	push		ax
-	mov		ax,430
-	push		ax
-	mov		ax,640
-	push		ax
-	mov		ax,430
-	push		ax
-	call line
-	pop ax
-	pop ax
-	pop ax
-	
-desenha_raquete:
-	;raquete (x1, y1, x2, y2)
-	mov		byte[cor],branco_intenso	
-	mov		ax,599
-	push		ax
-	mov		ax,word[raqi]
-	push		ax
-	mov		ax,599
-	push		ax
-	mov		ax,word[raqf]
-	push		ax
-	call line
-	pop ax
-	pop ax
-	pop ax
-
-jmp desenhou
 
 reduz_velo:
-	cmp word[vatual], 10
+	cmp word[vatual], 5
 	jle move_main2
 	
-	add word[vatual], -10
+	add word[vatual], -5
 	jmp move_main
 aumenta_velo:
-	cmp word[vatual], 30
+	cmp word[vatual], 15
 	jge move_main2
 	
-	add word[vatual], 10
+	add word[vatual], 5
 	jmp move_main
+
+
 
 set_caracter1:
     mov     	cx,58			;n�mero de caracteres
@@ -252,7 +271,7 @@ l4:
 		inc		dl			;avanca a coluna
     	loop    l4
 set_caracter2:
-	mov     	cx,24			;n�mero de caracteres
+	mov     	cx,62			;n�mero de caracteres
     mov     	bx,0
     mov     	dh,1			;linha 0-29
     mov     	dl,0			;coluna 0-79
@@ -265,7 +284,7 @@ write_name:
 		inc		dl			;avanca a coluna
     	loop    write_name
 
-jmp comeco
+jmp desenha_cabecalho
 
 encerra:
 	mov  	ah,0   			; set video mode
@@ -794,20 +813,26 @@ fim_line:
 		pop		bp
 		ret		8
 
-
-
-delay: ; Esteja atento pois talvez seja importante salvar contexto (no caso, CX, o que NÃO foi feito aqui).
-    push cx
-    mov cx, word [velocidade] ; Carrega “velocidade” em cx (contador para loop)
-del2:
-    push cx ; Coloca cx na pilha para usa-lo em outro loop
-    mov cx, 0500h ; Teste modificando este valor
-del1:
-    loop del1 ; No loop del1, cx é decrementado até que volte a ser zero
-    pop cx ; Recupera cx da pilha
-    loop del2 ; No loop del2, cx é decrementado até que seja zero
-    pop cx
-    ret
+;delay: ; Esteja atento pois talvez seja importante salvar contexto (no caso, CX, o que NÃO foi feito aqui).
+;	xor ax, ax
+;	mov ah, 86h
+;	push cx
+;	mov cx, 1
+;	push dx
+;	mov dx, 0
+;	int 15h
+;	pop cx
+;	pop dx
+;	ret
+;del2:
+    ;push cx ; Coloca cx na pilha para usa-lo em outro loop
+    ;mov cx, 0500h ; Teste modificando este valor
+;del1:
+ ;   loop del1 ; No loop del1, cx é decrementado até que volte a ser zero
+  ;  pop cx ; Recupera cx da pilha
+   ; loop del2 ; No loop del2, cx é decrementado até que seja zero
+    ;pop cx
+    ;ret
 
 ;*******************************************************************
 segment data
@@ -855,12 +880,12 @@ coluna  	dw  		0
 deltax		dw		0
 deltay		dw		0	
 mens1    	db  'Exercicio de Programacao de Sistemas Embarcados 1 - 2023/2'
-mens2		db	'Arthur Bandeira Salvador'
+mens2		db	'Arthur Bandeira Salvador 00 X 00 Computador   Velocidade (1/3)'
 
 velocidade	dw	120
-vx			dw	10
-vy			dw	10
-vatual 		dw	10
+vx			dw	5
+vy			dw	5
+vatual 		dw	5
 raqi		dw	214
 raqf		dw	254
 ;*************************************************************************
