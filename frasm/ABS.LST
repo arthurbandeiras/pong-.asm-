@@ -1,6 +1,6 @@
-     1                                  ; vers�o de 10/05/2007
-     2                                  ; corrigido erro de arredondamento na rotina line.
-     3                                  ; circle e full_circle disponibilizados por Jefferson Moro em 10/2009
+     1                                  ; NOME: ARTHUR BANDEIRA SALVADOR
+     2                                  ; TURMA: 06.1 N
+     3                                  ;
      4                                  ;
      5                                  segment code
      6                                  ..start:
